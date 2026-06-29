@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wavesong · St. George Island</title>
+<!--
+  ============================================================
+  FAMILY FLORIDA VACATION  ·  one-time setup (NEW project)
+  ============================================================
+  1. Create a NEW Supabase project. In it: Storage -> New bucket,
+     name it exactly:  florida-album   (turn ON "Public bucket")
+  2. Paste your project URL + publishable key into CONFIG below.
+  3. SQL Editor -> run the script at the bottom of this file.
+  Then host this file and share the link.
+  ============================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sand:#efe2c4; --paper:#f8f1df; --ocean:#2f7d86; --coral:#d9663f; --navy:#21495a;
+    --gold:#e0a53f; --ink:#23414c; --mute:#8a7d62; --line:#dccdaa;
+    --shadow:0 16px 36px -20px rgba(33,73,90,.4);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{ background:var(--sand); color:var(--ink); font-family:"Oswald",sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+
+  .banner{ position:relative; width:100%; height:clamp(300px,42vw,470px); overflow:hidden; }
+  .banner .scene{ position:absolute; inset:0; }
+  .banner .overlay{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 18px; }
+  .eyebrow{ color:#fbf3df; font-weight:500; letter-spacing:6px; font-size:clamp(12px,2vw,16px); text-transform:uppercase; margin:0; text-shadow:0 2px 8px rgba(20,40,46,.5); }
+  .title{ font-family:"Pacifico",cursive; color:#fff; font-size:clamp(52px,12vw,116px); line-height:1; margin:4px 0 6px; text-shadow:0 4px 18px rgba(20,40,46,.45); }
+  .dates{ color:#fbf3df; font-weight:500; letter-spacing:3px; font-size:clamp(13px,2.3vw,19px); text-shadow:0 2px 8px rgba(20,40,46,.5); display:flex; align-items:center; gap:12px; text-transform:uppercase; }
+  .dates .pk{ color:#f7c95f; }
+
+  .wrap{ max-width:1120px; margin:0 auto; padding:0 18px 90px; }
+
+  .refresh-row{ height:0; margin:0; }
+  .refresh-btn{ position:fixed; top:14px; right:14px; z-index:60; display:inline-flex; align-items:center; gap:8px; background:var(--coral); color:#fff; border:none; border-radius:26px; padding:12px 22px; font-family:"Oswald",sans-serif; font-size:15px; font-weight:600; letter-spacing:1px; cursor:pointer; box-shadow:0 10px 24px -6px rgba(0,0,0,.5); }
+  .refresh-btn:hover{ background:#bf5331; } .refresh-btn:disabled{ opacity:.7; cursor:default; }
+
+  .uploader{ background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:clamp(22px,4vw,34px); max-width:640px; margin:-50px auto 0; position:relative; z-index:2; }
+  .badge{ position:absolute; top:-22px; left:50%; transform:translateX(-50%); background:var(--ocean); color:#fff; font-weight:600; letter-spacing:2px; font-size:12px; text-transform:uppercase; padding:8px 18px; border-radius:30px; box-shadow:0 6px 16px -6px rgba(0,0,0,.4); }
+  .drop{ border:2px dashed var(--line); border-radius:13px; padding:30px 18px; text-align:center; cursor:pointer; transition:border-color .18s, background .18s; margin-top:8px; }
+  .drop:hover,.drop.over{ border-color:var(--ocean); background:#fdfaf0; }
+  .drop .big{ font-family:"Pacifico",cursive; color:var(--navy); font-size:28px; line-height:1; }
+  .drop .sub{ color:var(--mute); font-size:16px; margin-top:8px; font-weight:300; }
+  input[type=file]{ display:none; }
+  .meta{ display:grid; gap:12px; margin-top:18px; }
+  input[type=text]{ width:100%; font-family:"Oswald",sans-serif; font-weight:300; font-size:17px; color:var(--ink); background:#fffdf7; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  input[type=text]:focus{ outline:none; border-color:var(--ocean); }
+  input::placeholder{ color:#b8ac90; }
+  .queue{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+  .thumb{ position:relative; width:74px; height:74px; border-radius:9px; overflow:hidden; border:1px solid var(--line); }
+  .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .thumb .x{ position:absolute; top:2px; right:2px; width:20px; height:20px; border:none; border-radius:50%; background:rgba(33,73,90,.72); color:#fff; cursor:pointer; font-size:13px; line-height:20px; padding:0; }
+  .send{ margin-top:20px; width:100%; border:none; cursor:pointer; background:var(--coral); color:#fff; font-family:"Oswald",sans-serif; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; font-size:15px; padding:15px; border-radius:11px; transition:background .18s, transform .12s; }
+  .send:hover{ background:#bf5331; transform:translateY(-1px); }
+  .send:disabled{ opacity:.5; cursor:default; transform:none; }
+  .status{ text-align:center; color:var(--mute); font-size:15px; margin-top:12px; min-height:20px; }
+  .banner-note{ max-width:640px; margin:24px auto 0; background:#f6ecd2; border:1px solid var(--line); border-radius:10px; padding:11px 16px; text-align:center; color:var(--mute); font-size:15px; }
+  .banner-note b{ color:var(--ink); }
+
+  .gallery-head{ text-align:center; margin:64px 0 22px; }
+  .gallery-head h2{ font-family:"Pacifico",cursive; color:var(--navy); font-weight:400; font-size:clamp(32px,5vw,46px); margin:0; }
+  .gallery-head .count{ color:var(--mute); letter-spacing:2px; text-transform:uppercase; font-size:13px; margin-top:8px; }
+  #dlall-wrap{ margin-top:12px; }
+  .dl-all{ display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#fff; border:none; border-radius:24px; padding:9px 20px; font-family:"Oswald",sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; }
+  .dl-all:hover{ background:#173846; } .dl-all:disabled{ opacity:.6; cursor:default; }
+  .hostnote{ margin-top:8px; font-family:"Oswald",sans-serif; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--coral); }
+  .savetip{ text-align:center; color:var(--mute); font-size:14px; margin-top:8px; }
+
+  .grid{ columns:4 240px; column-gap:16px; }
+  .tile{ position:relative; break-inside:avoid; margin-bottom:16px; background:#fffdf7; padding:10px 10px 0; border:1px solid var(--line); border-radius:6px; box-shadow:var(--shadow); cursor:zoom-in; }
+  .tile img{ width:100%; display:block; border-radius:3px; }
+  .tile .cap{ padding:9px 4px 12px; }
+  .tile .cap .who{ font-weight:600; font-size:15px; color:var(--ink); }
+  .tile .cap .note{ color:var(--mute); font-size:14px; font-weight:300; }
+  .tile-actions{ position:absolute; top:8px; right:8px; display:flex; gap:6px; opacity:0; transition:opacity .15s; }
+  .tile:hover .tile-actions{ opacity:1; }
+  @media (hover:none){ .tile-actions{ opacity:.92; } }
+  .iconbtn{ width:34px; height:34px; border:none; border-radius:50%; background:rgba(33,73,90,.8); color:#fff; cursor:pointer; font-size:16px; line-height:1; padding:0; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .iconbtn:hover{ background:rgba(33,73,90,.97); }
+  .iconbtn.del{ background:rgba(168,45,30,.88); }
+  .iconbtn.del:hover{ background:rgba(168,45,30,1); }
+  .empty{ text-align:center; color:var(--mute); padding:50px 0; font-size:18px; }
+
+  .lb{ position:fixed; inset:0; background:rgba(18,30,34,.93); display:none; align-items:center; justify-content:center; z-index:50; padding:24px; cursor:zoom-out; }
+  .lb.open{ display:flex; }
+  .lb img{ max-width:94vw; max-height:88vh; border-radius:6px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .lb .cap{ position:absolute; bottom:22px; left:0; right:0; text-align:center; color:#f3ead4; font-size:17px; }
+  .lb-bar{ position:absolute; top:18px; right:18px; display:flex; gap:10px; z-index:3; }
+  .lb-bar .iconbtn{ width:42px; height:42px; font-size:19px; }
+
+  /* trip info */
+  .info{ margin-top:72px; }
+  .sect{ background:var(--paper); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
+  .sect-head{ width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:18px 22px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-family:"Oswald",sans-serif; }
+  .sect-head .st{ font-weight:700; font-size:21px; color:var(--navy); }
+  .sect-head .ss{ color:var(--mute); font-size:16px; font-weight:300; }
+  .sect-head .chev{ margin-left:auto; color:var(--coral); font-size:24px; line-height:1; transition:transform .2s; }
+  .sect.open .chev{ transform:rotate(45deg); }
+  .sect-body{ display:none; padding:2px 22px 20px; }
+  .sect.open .sect-body{ display:block; }
+  .sect-body ul{ list-style:none; margin:0; padding:0; }
+  .sect-body li{ display:flex; gap:14px; padding:11px 0; border-bottom:1px dashed var(--line); align-items:flex-start; }
+  .sect-body li:last-child{ border-bottom:none; }
+  .tag{ flex:0 0 96px; font-weight:600; color:var(--ocean); font-size:13px; text-transform:uppercase; letter-spacing:.5px; padding-top:3px; }
+  .val{ flex:1; font-size:17px; font-weight:300; color:var(--ink); }
+  .val b{ font-weight:600; color:var(--navy); }
+  .val .d{ color:var(--mute); font-size:15px; display:block; margin-top:2px; }
+  .sect-tools{ display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 12px; }
+  .sect-tools button, .add-line{ background:none; border:1px solid var(--line); color:var(--mute); cursor:pointer; font-family:"Oswald",sans-serif; font-size:12px; letter-spacing:.5px; padding:5px 10px; border-radius:8px; }
+  .sect-tools button:hover, .add-line:hover{ color:var(--navy); border-color:var(--navy); }
+  .add-line{ margin-top:8px; border-style:dashed; color:var(--navy); font-size:13px; padding:8px 14px; }
+  .line-ctrl{ flex:0 0 auto; display:flex; align-items:center; gap:1px; margin-left:4px; }
+  .mv,.item-edit{ background:none; border:none; color:var(--mute); cursor:pointer; font-size:13px; line-height:1; padding:3px; }
+  .mv:hover,.item-edit:hover{ color:var(--navy); }
+  .editor{ background:#fdf6e6; border:1px solid var(--line); border-radius:10px; padding:12px; margin:8px 0; display:flex; flex-direction:column; gap:8px; }
+  .editor input,.editor textarea{ width:100%; font-family:"Oswald",sans-serif; font-weight:300; font-size:16px; border:1px solid var(--line); border-radius:8px; padding:9px 11px; background:#fffdf7; color:var(--ink); }
+  .editor textarea{ min-height:54px; resize:vertical; }
+  .editor .row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .editor button{ font-family:"Oswald",sans-serif; font-size:13px; letter-spacing:1px; border:none; border-radius:8px; padding:9px 16px; cursor:pointer; }
+  .btn-save,.btn-save-sect{ background:var(--navy); color:#fff; } .btn-del{ background:rgba(168,45,30,.9); color:#fff; } .btn-cancel{ background:#e6dcc2; color:var(--ink); }
+
+  @media (max-width:560px){ .grid{ columns:2 150px; } .tag{ flex-basis:74px; font-size:12px; } .sect-head .ss{ width:100%; } }
+  .ilink{ font-weight:600; color:var(--ocean); text-decoration:none; border-bottom:1px solid var(--ocean); }
+  .ilink:hover{ color:var(--coral); border-color:var(--coral); }
+  .mapsec{ margin-top:72px; }
+  .mapwrap{ border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow); }
+  .mapwrap iframe{ width:100%; height:440px; border:0; display:block; }
+  .map-link{ color:var(--ocean); font-family:"Oswald",sans-serif; letter-spacing:1px; text-decoration:none; border-bottom:1px solid var(--ocean); }
+  .map-link:hover{ color:var(--coral); border-color:var(--coral); }
+  .version-btn{ position:fixed; top:62px; right:14px; z-index:60; background:rgba(248,241,223,.92); color:var(--navy); border:1px solid var(--line); border-radius:20px; padding:7px 14px; font-family:"Oswald",sans-serif; font-size:12px; letter-spacing:.5px; cursor:pointer; box-shadow:0 6px 16px -8px rgba(0,0,0,.4); }
+  .version-btn:hover{ background:#fff; }
+  .menu-link{ font-size:13px; color:var(--coral); text-decoration:none; border-bottom:1px solid var(--coral); white-space:nowrap; margin-left:4px; }
+  .menu-link:hover{ color:var(--navy); border-color:var(--navy); }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <div class="scene"><svg viewBox="0 0 1200 560" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;"><defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3b7e93"/><stop offset="0.45" stop-color="#e89a5c"/>
+        <stop offset="0.72" stop-color="#f3c074"/><stop offset="1" stop-color="#f6d99a"/>
+      </linearGradient>
+      <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2f7d86"/><stop offset="1" stop-color="#1f5c66"/>
+      </linearGradient></defs><rect width="1200" height="560" fill="url(#sky)"/><g><polygon points="684,246 774,250 684,254" fill="#f7c95f" opacity="0.5"/><polygon points="675,288 751,337 671,296" fill="#f7c95f" opacity="0.5"/><polygon points="646,321 687,401 638,325" fill="#f7c95f" opacity="0.5"/><polygon points="604,334 600,424 596,334" fill="#f7c95f" opacity="0.5"/><polygon points="562,325 513,401 554,321" fill="#f7c95f" opacity="0.5"/><polygon points="529,296 449,337 525,288" fill="#f7c95f" opacity="0.5"/><polygon points="516,254 426,250 516,246" fill="#f7c95f" opacity="0.5"/><polygon points="525,212 449,163 529,204" fill="#f7c95f" opacity="0.5"/><polygon points="554,179 513,99 562,175" fill="#f7c95f" opacity="0.5"/><polygon points="596,166 600,76 604,166" fill="#f7c95f" opacity="0.5"/><polygon points="638,175 687,99 646,179" fill="#f7c95f" opacity="0.5"/><polygon points="671,204 751,163 675,212" fill="#f7c95f" opacity="0.5"/></g><circle cx="600" cy="250" r="78" fill="#f4b740"/><circle cx="600" cy="250" r="60" fill="#f8d074"/><path d="M 236.0 120 Q 245.0 111.0 250 120 Q 255.0 111.0 264.0 120" stroke="#2c4a52" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 300.2 150 Q 306.5 143.7 310 150 Q 313.5 143.7 319.8 150" stroke="#2c4a52" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M 887.4 110 Q 895.5 101.9 900 110 Q 904.5 101.9 912.6 110" stroke="#2c4a52" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="0" y="330" width="1200" height="120" fill="url(#sea)"/><g fill="#f7d27a" opacity="0.55"><rect x="585" y="338" width="30" height="6" rx="3"/><rect x="578" y="354" width="44" height="6" rx="3"/><rect x="588" y="372" width="24" height="6" rx="3"/><rect x="572" y="392" width="56" height="6" rx="3"/><rect x="590" y="414" width="20" height="6" rx="3"/></g><path d="M0,430 Q300,412 600,430 T1200,426 L1200,560 L0,560 Z" fill="#ecd9ab"/><path d="M0,430 Q300,412 600,430 T1200,426" stroke="#fbf3df" stroke-width="6" fill="none" opacity="0.8"/><path d="M0,470 Q140,440 300,470 L300,560 L0,560 Z" fill="#e2cb98"/><path d="M880,500 Q1020,470 1200,500 L1200,560 L880,560 Z" fill="#e2cb98"/><g><path d="M 20 476 Q 12 448.4 8.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 46 476 Q 38 448.4 34.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 72 476 Q 80 448.4 83.2 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 98 476 Q 90 448.4 86.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 124 476 Q 116 448.4 112.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 150 476 Q 158 448.4 161.2 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 176 476 Q 168 448.4 164.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 202 476 Q 194 448.4 190.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 228 476 Q 236 448.4 239.2 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 254 476 Q 246 448.4 242.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 280 476 Q 272 448.4 268.8 430" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 900 500 Q 892 470.0 888.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 926 500 Q 918 470.0 914.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 952 500 Q 944 470.0 940.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 978 500 Q 970 470.0 966.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1004 500 Q 996 470.0 992.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1030 500 Q 1022 470.0 1018.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1056 500 Q 1048 470.0 1044.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1082 500 Q 1074 470.0 1070.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1108 500 Q 1100 470.0 1096.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1134 500 Q 1126 470.0 1122.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1160 500 Q 1152 470.0 1148.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 1186 500 Q 1178 470.0 1174.8 450" stroke="#b89b5e" stroke-width="3" fill="none" stroke-linecap="round"/></g><g><polygon points="1018,492 1062,492 1055,360 1025,360" fill="#f7f2e6" stroke="#c9bfa6" stroke-width="2"/><rect x="1023" y="430" width="34" height="10" fill="#d9663f"/><rect x="1025" y="398" width="30" height="9" fill="#d9663f"/><rect x="1021" y="350" width="38" height="12" fill="#2c4a52"/><rect x="1027" y="330" width="26" height="22" fill="#3b6470"/><polygon points="1025,330 1055,330 1040,316" fill="#2c4a52"/><circle cx="1040" cy="341" r="5" fill="#f7c95f"/></g></svg></div>
+    <div class="overlay">
+      <p class="eyebrow" id="eyebrow">Our Family Vacation · 2026</p>
+      <h1 class="title" id="trip">Wavesong</h1>
+      <p class="dates"><span class="pk">~</span><span id="dates">St. George Island · July 26 – Aug 2</span><span class="pk">~</span></p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="refresh-row"><button class="refresh-btn" id="refreshBtn">↻ Refresh</button><button class="version-btn" id="versionBtn">⟳ Get latest version</button></div>
+
+    <section class="uploader">
+      <div class="badge">Share Your Photos</div>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*" multiple />
+        <div class="big">Add your photos</div>
+        <div class="sub">Tap to choose, or drag pictures here</div>
+      </label>
+      <div class="queue" id="queue"></div>
+      <div class="meta">
+        <input type="text" id="name" placeholder="Your name (optional)" />
+        <input type="text" id="caption" placeholder="Add a caption (optional)" />
+      </div>
+      <button class="send" id="send" disabled>Add to the album</button>
+      <div class="status" id="status"></div>
+    </section>
+
+    <div class="banner-note" id="banner-note" style="display:none;"></div>
+
+    <div class="gallery-head">
+      <h2>The Album</h2>
+      <div class="count" id="count">Loading…</div>
+      <div id="dlall-wrap" style="display:none;"><button class="dl-all" id="dlall">↓  Download all</button></div>
+      <div id="hostnote" class="hostnote" style="display:none;">Host mode · delete &amp; info editing enabled</div>
+      <div class="savetip">On a phone? Tap a photo, then press &amp; hold it to save to your camera roll.</div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none;">No photos yet — be the first to add one.</div>
+
+    <section class="info">
+      <div class="gallery-head"><h2>Trip Info</h2><div class="count" id="info-sub">Wavesong · St. George Island, FL</div></div>
+      <div id="info-sects"></div>
+    </section>
+
+    <section class="mapsec">
+      <div class="gallery-head"><h2>Find Us</h2><div class="count"><a class="map-link" href="https://www.google.com/maps/dir/?api=1&amp;destination=1570%20E.%20Gulf%20Beach%20Dr.%2C%20St.%20George%20Island%2C%20FL%2032328" target="_blank" rel="noopener">1570 E. Gulf Beach Dr. · St. George Island, FL 32328 ↗</a></div></div>
+      <div class="mapwrap"><iframe src="https://maps.google.com/maps?q=1570%20E.%20Gulf%20Beach%20Dr.%2C%20St.%20George%20Island%2C%20FL%2032328&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to Wavesong"></iframe></div>
+      <div style="text-align:center;margin-top:14px;"><a class="map-link" href="https://www.google.com/maps/search/?api=1&amp;query=1570+E.+Gulf+Beach+Dr.,+St.+George+Island,+FL+32328" target="_blank" rel="noopener">Open in Google Maps ↗</a></div>
+    </section>
+  </div>
+
+  <div class="lb" id="lb"><div class="lb-bar" id="lbbar"></div><img id="lbimg" alt="" /><div class="cap" id="lbcap"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+/* ===================== CONFIG ===================== */
+const SUPABASE_URL = "https://mcluimefffhdrdiiptma.supabase.co";
+const SUPABASE_KEY = "sb_publishable_TmNwJxXvvJYKIVV5LMfTeg_Gb0vds-g";
+const BUCKET       = "florida-album";
+const PHOTO_TABLE  = "florida_photos";
+const INFO_TABLE   = "florida_info";
+const HOST_CODE    = "florida2026";
+const TRIP_NAME    = "Wavesong";
+const DATES_LINE   = "St. George Island · July 26 – Aug 2";
+/* ================================================== */
+
+document.getElementById("trip").textContent = TRIP_NAME;
+document.getElementById("dates").textContent = DATES_LINE;
+document.title = TRIP_NAME + " · St. George Island";
+
+const LIVE = (typeof supabase !== "undefined") && SUPABASE_URL && !SUPABASE_URL.includes("YOUR_");
+const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const HOST = new URLSearchParams(location.search).get("host") === HOST_CODE;
+let demo = []; let PHOTOS = [];
+if (!LIVE){ const b=document.getElementById("banner-note"); b.style.display="block"; b.innerHTML="<b>Preview mode.</b> Photos &amp; edits are local only — add your new Supabase keys to go live."; }
+if (HOST){ const hn=document.getElementById("hostnote"); if(hn) hn.style.display="block"; }
+
+/* ---------- upload queue ---------- */
+let queued = [];
+const fileInput=document.getElementById("file"), drop=document.getElementById("drop"), queueEl=document.getElementById("queue"), sendBtn=document.getElementById("send"), statusEl=document.getElementById("status");
+fileInput.addEventListener("change", e=>addFiles(e.target.files));
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop", e=>addFiles(e.dataTransfer.files));
+function addFiles(list){ for(const f of list){ if(f.type.startsWith("image/")) queued.push(f); } renderQueue(); }
+function renderQueue(){
+  queueEl.innerHTML="";
+  queued.forEach((f,i)=>{ const d=document.createElement("div"); d.className="thumb";
+    const img=document.createElement("img"); img.src=URL.createObjectURL(f); d.appendChild(img);
+    const x=document.createElement("button"); x.className="x"; x.textContent="×"; x.onclick=()=>{queued.splice(i,1);renderQueue();}; d.appendChild(x); queueEl.appendChild(d); });
+  sendBtn.disabled=queued.length===0;
+  sendBtn.textContent=queued.length>1?("Add "+queued.length+" photos to the album"):"Add to the album";
+}
+function processImage(file,maxDim=1800,quality=0.85){
+  return new Promise((resolve,reject)=>{ const img=new Image();
+    img.onload=()=>{ let {width,height}=img; if(Math.max(width,height)>maxDim){ const s=maxDim/Math.max(width,height); width=Math.round(width*s); height=Math.round(height*s);}
+      const c=document.createElement("canvas"); c.width=width; c.height=height; c.getContext("2d").drawImage(img,0,0,width,height);
+      c.toBlob(b=>b?resolve(b):reject(new Error("encode failed")),"image/jpeg",quality); };
+    img.onerror=reject; img.src=URL.createObjectURL(file); });
+}
+sendBtn.addEventListener("click", upload);
+let _heicLoaded=false;
+function ensureHeic(){
+  if(_heicLoaded && window.heic2any) return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    if(window.heic2any){ _heicLoaded=true; return resolve(); }
+    const sc=document.createElement("script");
+    sc.src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+    sc.onload=()=>{ _heicLoaded=true; resolve(); };
+    sc.onerror=()=>reject(new Error("HEIC converter failed to load"));
+    document.head.appendChild(sc);
+  });
+}
+async function upload(){
+  if(!queued.length) return;
+  const name=document.getElementById("name").value.trim()||null, caption=document.getElementById("caption").value.trim()||null;
+  sendBtn.disabled=true; const total=queued.length;
+  try{
+    for(let i=0;i<total;i++){
+      statusEl.textContent="Uploading "+(i+1)+" of "+total+"…";
+      let blob=queued[i], fname=queued[i].name||"", ctype=queued[i].type||"application/octet-stream", ext="";
+      const isHeic = /heic|heif/i.test(ctype) || /\.(heic|heif)$/i.test(fname);
+      if(isHeic){
+        statusEl.textContent="Converting "+(i+1)+" of "+total+"…";
+        try{ await ensureHeic(); const out=await heic2any({ blob:queued[i], toType:"image/jpeg", quality:0.92 }); blob=Array.isArray(out)?out[0]:out; ctype="image/jpeg"; ext="jpg"; }
+        catch(err){ console.warn("HEIC convert failed, uploading original",err); blob=queued[i]; }
+        statusEl.textContent="Uploading "+(i+1)+" of "+total+"…";
+      }
+      if(LIVE){
+        if(!ext) ext=(fname && fname.lastIndexOf(".")>-1) ? fname.slice(fname.lastIndexOf(".")+1).toLowerCase().replace(/[^a-z0-9]/g,"") : ((ctype.split("/")[1])||"jpg");
+        if(!ext) ext="jpg";
+        const path=Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+        const up=await sb.storage.from(BUCKET).upload(path,blob,{contentType:ctype||"application/octet-stream"}); if(up.error) throw up.error;
+        const { data:{ publicUrl } }=sb.storage.from(BUCKET).getPublicUrl(path);
+        const ins=await sb.from(PHOTO_TABLE).insert({ url:publicUrl, path, uploader:name, caption }); if(ins.error) throw ins.error;
+      } else { demo.unshift({ url:URL.createObjectURL(blob), uploader:name, caption, created_at:new Date().toISOString() }); }
+    }
+    statusEl.textContent=total>1?"Added! Your photos are in the album.":"Added! Your photo is in the album.";
+    queued=[]; renderQueue(); document.getElementById("name").value=""; document.getElementById("caption").value=""; loadGallery();
+  }catch(e){ console.error(e); statusEl.textContent="Upload failed: "+((e&&(e.message||e.error||e.error_description))||"unknown error"); sendBtn.disabled=false; }
+}
+
+/* ---------- gallery ---------- */
+const grid=document.getElementById("grid"), countEl=document.getElementById("count"), emptyEl=document.getElementById("empty");
+const dlallWrap=document.getElementById("dlall-wrap"); document.getElementById("dlall").addEventListener("click",downloadAll);
+async function loadGallery(){
+  let rows=[];
+  try{ if(LIVE){ const {data,error}=await sb.from(PHOTO_TABLE).select("*").order("created_at",{ascending:false}); if(error) throw error; rows=data||[]; } else { rows=demo; } }
+  catch(e){ console.error(e); countEl.textContent="Couldn't load the album."; return; }
+  PHOTOS=rows;
+  countEl.textContent=rows.length?(rows.length+" photo"+(rows.length>1?"s":"")+" shared"):"";
+  emptyEl.style.display=rows.length?"none":"block";
+  dlallWrap.style.display=rows.length?"block":"none";
+  grid.innerHTML=rows.map((r,i)=>{
+    const cap=(r.uploader||r.caption)?('<div class="cap">'+(r.uploader?'<div class="who">'+esc(r.uploader)+'</div>':'')+(r.caption?'<div class="note">'+esc(r.caption)+'</div>':'')+'</div>'):'';
+    const actions='<div class="tile-actions"><button class="iconbtn dl" title="Save photo">↓</button>'+(HOST?'<button class="iconbtn del" title="Delete photo">✕</button>':'')+'</div>';
+    return '<div class="tile" data-i="'+i+'">'+actions+'<img loading="lazy" src="'+r.url+'" alt="">'+cap+'</div>';
+  }).join("");
+  grid.querySelectorAll(".tile").forEach(t=>{ const i=+t.dataset.i;
+    t.addEventListener("click",ev=>{ if(ev.target.closest(".tile-actions")) return; openLb(i); });
+    const dl=t.querySelector(".dl"); if(dl) dl.addEventListener("click",ev=>{ ev.stopPropagation(); dlPhoto(PHOTOS[i].url); });
+    const del=t.querySelector(".del"); if(del) del.addEventListener("click",ev=>{ ev.stopPropagation(); delPhoto(i); }); });
+}
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- lightbox + download/delete ---------- */
+const lb=document.getElementById("lb"), lbimg=document.getElementById("lbimg"), lbcap=document.getElementById("lbcap"), lbbar=document.getElementById("lbbar");
+function capOf(r){ return (r.uploader?r.uploader+(r.caption?" — ":""):"")+(r.caption||""); }
+function openLb(i){ const r=PHOTOS[i]; lbimg.src=r.url; lbcap.textContent=capOf(r); buildLbBar(r,i); lb.classList.add("open"); }
+function buildLbBar(r,i){
+  lbbar.innerHTML="";
+  const dl=document.createElement("button"); dl.className="iconbtn"; dl.title="Save photo"; dl.textContent="↓"; dl.onclick=ev=>{ev.stopPropagation();dlPhoto(r.url);}; lbbar.appendChild(dl);
+  if(HOST){ const x=document.createElement("button"); x.className="iconbtn del"; x.title="Delete photo"; x.textContent="✕"; x.onclick=ev=>{ev.stopPropagation();lb.classList.remove("open");delPhoto(i);}; lbbar.appendChild(x); }
+}
+lb.addEventListener("click",ev=>{ if(ev.target.closest(".lb-bar")) return; lb.classList.remove("open"); });
+async function dlPhoto(url,name){
+  name=name||(url.split("/").pop()||"photo.jpg");
+  try{ const res=await fetch(url,{mode:"cors"}); const blob=await res.blob(); const file=new File([blob],name,{type:blob.type||"image/jpeg"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ if(e&&e.name==="AbortError") return; } }
+    const a=document.createElement("a"); const u=URL.createObjectURL(blob); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+  }catch(e){ window.open(url,"_blank"); }
+}
+async function delPhoto(i){
+  const r=PHOTOS[i]; if(!r) return;
+  if(!confirm("Delete this photo for everyone? This can’t be undone.")) return;
+  try{ if(LIVE){ if(r.path) await sb.storage.from(BUCKET).remove([r.path]); const {error}=await sb.from(PHOTO_TABLE).delete().eq("id",r.id); if(error) throw error; } else { demo.splice(i,1); } loadGallery(); }
+  catch(e){ alert("Couldn't delete: "+(e.message||e)); }
+}
+async function downloadAll(){
+  if(!PHOTOS.length) return;
+  const btn=document.getElementById("dlall"); const orig=btn.textContent; btn.disabled=true;
+  try{ const zip=new JSZip();
+    for(let i=0;i<PHOTOS.length;i++){ btn.textContent="Zipping "+(i+1)+"/"+PHOTOS.length+"…";
+      try{ const res=await fetch(PHOTOS[i].url,{mode:"cors"}); const blob=await res.blob(); const who=PHOTOS[i].uploader?PHOTOS[i].uploader.replace(/[^a-z0-9]+/gi,"_")+"-":""; zip.file(String(i+1).padStart(3,"0")+"-"+who+"photo.jpg",blob); }catch(e){ console.warn("skip",e); } }
+    btn.textContent="Building zip…"; const out=await zip.generateAsync({type:"blob"}); const a=document.createElement("a"); const u=URL.createObjectURL(out); a.href=u; a.download="florida-album.zip"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+  }catch(e){ alert("Couldn't build the download: "+(e.message||e)); }
+  btn.textContent=orig; btn.disabled=false;
+}
+
+/* ---------- editable Trip Info ---------- */
+const DEFAULT_INFO=[{"id": "s1", "title": "The House", "subtitle": "Wavesong · St. George Island", "items": [{"id": "s1-dates", "label": "Dates", "value": "July 26 – August 2, 2026", "detail": "Sunday to Sunday"}, {"id": "s1-addr", "label": "Address", "value": "1570 E. Gulf Beach Dr., St. George Island, FL 32328", "link": "https://www.google.com/maps/dir/?api=1&destination=1570%20E.%20Gulf%20Beach%20Dr.%2C%20St.%20George%20Island%2C%20FL%2032328"}, {"id": "s1-book", "label": "Booking", "value": "capeandcoast.com", "link": "https://www.capeandcoast.com/rentals/wavesong"}, {"id": "s1-cost", "label": "Total", "value": "$29,260.59", "detail": "$2,926 per room"}]}, {"id": "s2", "title": "Room Assignments", "subtitle": "8 king suites + 2 bunk rooms", "items": [{"id": "s2-k1", "label": "King 1", "value": "Gaga"}, {"id": "s2-k2", "label": "King 2", "value": "Laura"}, {"id": "s2-k3", "label": "King 3", "value": "Connie"}, {"id": "s2-k4", "label": "King 4", "value": "Kay & Joe"}, {"id": "s2-k5", "label": "King 5", "value": "Karen & Keith"}, {"id": "s2-k6", "label": "King 6", "value": "Tristan & Kim"}, {"id": "s2-k7", "label": "King 7", "value": "Alex, Bri & Miller"}, {"id": "s2-k8", "label": "King 8", "value": "Grace & Josh"}, {"id": "s2-b1", "label": "Bunk 1", "value": "Jacob & Hillary · Noah & Cass", "detail": "4 queens"}, {"id": "s2-b2", "label": "Bunk 2", "value": "Kennedy, Brennan, Blake & Houston", "detail": "4 queens"}]}, {"id": "s3", "title": "Where to Eat", "subtitle": "On & off the island", "items": [{"id": "s3-1", "label": "On Island", "value": "Blue Parrot", "link": "https://www.google.com/maps/dir/?api=1&destination=Blue%20Parrot%20Oceanfront%20Cafe%2C%2068%20W%20Gorrie%20Dr%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Beachfront seafood & bar · 68 W Gorrie Dr · ~6 min · 11am–9pm daily", "menu": "https://www.blueparrotsgi.com/menu/"}, {"id": "s3-2", "label": "On Island", "value": "Paddy's Raw Bar", "link": "https://www.google.com/maps/dir/?api=1&destination=Paddy%27s%20Raw%20Bar%2C%20240%203rd%20St%20E%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Oyster & raw bar · 240 3rd St E · ~6 min · 11am–12am daily", "menu": "https://www.paddysrawbar.net/menu"}, {"id": "s3-3", "label": "On Island", "value": "Beach Pit", "link": "https://www.google.com/maps/dir/?api=1&destination=The%20Beach%20Pit%2C%2049%20W%20Pine%20Ave%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Texas BBQ, seafood & steaks · 49 W Pine Ave · ~7 min · 7:30am–9pm daily", "menu": "https://www.thebeachpit.com/menu/"}, {"id": "s3-4", "label": "On Island", "value": "Mango Mike's", "link": "https://www.google.com/maps/dir/?api=1&destination=Mango%20Mike%27s%2C%2036%20W%20Pine%20Ave%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Tiki sports bar & grill · 36 W Pine Ave · ~7 min · Sun–Wed 12–9pm · Thu 11:30am–9pm · Fri–Sat 12pm–2am"}, {"id": "s3-5", "label": "On Island", "value": "BJ's Pizza & Subs", "link": "https://www.google.com/maps/dir/?api=1&destination=BJ%27s%20Pizza%20and%20Subs%2C%20105%20W%20Gulf%20Beach%20Dr%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Pizza & subs · 105 W Gulf Beach Dr · ~6 min · 11am–9pm daily", "menu": "https://www.sgipizza.com/"}, {"id": "s3-6", "label": "Sweets", "value": "Aunt Ebby's Ice Cream", "link": "https://www.google.com/maps/dir/?api=1&destination=Aunt%20Ebby%27s%20Ice%20Cream%2C%20147%20E%20Gulf%20Beach%20Dr%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Ice cream & sweets · 147 E Gulf Beach Dr · ~5 min · 1–9pm daily"}, {"id": "s3-7", "label": "Coffee", "value": "Island Espresso", "link": "https://www.google.com/maps/dir/?api=1&destination=Island%20Espresso%2C%20128%20E%20Pine%20Ave%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Coffee & espresso · 128 E Pine Ave · ~6 min · ~7am–2pm (seasonal · confirm)"}, {"id": "s3-8", "label": "Food Truck", "value": "Big Fish Café SGI", "link": "https://www.google.com/maps/dir/?api=1&destination=Bigfishcafesgi%2C%20St.%20George%20Island%2C%20FL%2032328", "detail": "Seafood food truck · location varies · from ~8am · hours vary (confirm)"}, {"id": "s3-9", "label": "Off Island", "value": "Owl Café", "detail": "Upscale American & seafood · 15 Ave D, Apalachicola · ~22 min · Mon–Sat 11am–9pm · Sun 10am–9pm", "link": "https://www.google.com/maps/dir/?api=1&destination=Owl%20Cafe%2C%2015%20Ave%20D%2C%20Apalachicola%2C%20FL%2032320", "menu": "https://www.owlcafeflorida.com/owl-cafe"}, {"id": "s3-10", "label": "Off Island", "value": "Half Shell Dockside", "link": "https://www.google.com/maps/dir/?api=1&destination=Half%20Shell%20Dockside%2C%20301%20Market%20St%2C%20Apalachicola%2C%20FL%2032320", "detail": "Waterfront seafood & raw bar · 301 Market St, Apalachicola · ~22 min · 11am–10pm daily", "menu": "https://www.halfshelldockside.com/menu"}]}, {"id": "s4", "title": "Provisions", "subtitle": "Groceries & supplies", "items": [{"id": "s4-1", "label": "Liquor", "value": "Castaway Liquors", "detail": "228 Franklin Blvd · ~6 min · 9am–9pm daily", "link": "https://www.google.com/maps/dir/?api=1&destination=Castaway%20Liquors%2C%20228%20Franklin%20Blvd%2C%20St.%20George%20Island%2C%20FL%2032328"}, {"id": "s4-2", "label": "Grocery", "value": "Piggly Wiggly", "detail": "244 Franklin Blvd · ~6 min · 7am–10pm daily", "link": "https://www.google.com/maps/dir/?api=1&destination=Piggly%20Wiggly%2C%20244%20Franklin%20Blvd%2C%20St.%20George%20Island%2C%20FL%2032328"}, {"id": "s4-3", "label": "Grocery", "value": "Captain's Corner Store", "detail": "St. George Island · ~6 min · 6am–10pm daily", "link": "https://www.google.com/maps/dir/?api=1&destination=Captain%27s%20Corner%20Store%2C%20St.%20George%20Island%2C%20FL%2032328"}, {"id": "s4-4", "label": "Delivery", "value": "Grocery Gals", "detail": "Delivery · St. George Island · 850-596-9155", "link": "tel:+18505969155"}]}, {"id": "s5", "title": "Beach · Tide · Weather", "subtitle": "Check before you head out", "items": [{"id": "s5-w", "label": "Weather", "value": "7-day forecast", "detail": "National Weather Service · St. George Island", "link": "https://forecast.weather.gov/MapClick.php?lat=29.665&lon=-84.84"}, {"id": "s5-t", "label": "Tides", "value": "Tide chart & sun times", "detail": "High/low tides, sunrise & sunset (US Harbors)", "link": "https://www.usharbors.com/harbor/florida/st-george-island-sikes-cut-fl/tides/"}, {"id": "s5-s", "label": "Surf", "value": "Surf & beach conditions", "detail": "Waves, wind & water (Surf-Forecast)", "link": "https://www.surf-forecast.com/breaks/St-George-Island/forecasts/latest"}]}];
+let INFO=[]; let infoEditing=null; let openSects=null;
+function toggleSect(btn){ const s=btn.closest(".sect"); if(!s) return; const on=s.classList.toggle("open"); const id=s.dataset.sect; if(id&&openSects){ if(on) openSects.add(id); else openSects.delete(id); } }
+function renderInfo(){
+  const wrap=document.getElementById("info-sects"); if(!wrap) return;
+  if(openSects===null) openSects=new Set(INFO.length?[INFO[0].id]:[]);
+  wrap.innerHTML=INFO.map((s,sidx)=>{
+    const items=s.items.map(it=>{
+      if(infoEditing&&infoEditing.sectId===s.id&&infoEditing.itemId===it.id) return entryEditor(s.id,it);
+      const det=it.detail?('<span class="d">'+esc(it.detail)+'</span>'):"";
+      const ctrl=HOST?('<span class="line-ctrl"><button class="mv up" data-s="'+s.id+'" data-i="'+it.id+'" title="Move up">▲</button><button class="mv dn" data-s="'+s.id+'" data-i="'+it.id+'" title="Move down">▼</button><button class="item-edit" data-s="'+s.id+'" data-i="'+it.id+'" title="Edit">✎</button></span>'):"";
+      const vv=it.link?('<a class="ilink" href="'+esc(it.link)+'" target="_blank" rel="noopener">'+esc(it.value||"")+'</a>'):('<b>'+esc(it.value||"")+'</b>');
+      return '<li>'+(it.label?'<span class="tag">'+esc(it.label)+'</span>':'<span class="tag"></span>')+'<span class="val">'+vv+(it.menu?(' <a class="menu-link" href="'+esc(it.menu)+'" target="_blank" rel="noopener">Menu ↗</a>'):"")+det+'</span>'+ctrl+'</li>';
+    }).join("");
+    const adding=(infoEditing&&infoEditing.sectId===s.id&&infoEditing.add)?entryEditor(s.id,null):"";
+    const tools=(HOST&&!(infoEditing&&infoEditing.sectId===s.id))?('<div class="sect-tools"><button class="sect-edit" data-s="'+s.id+'">✎ Edit heading</button>'+(sidx>0?'<button class="sect-mv up" data-s="'+s.id+'">▲ Move section up</button>':"")+(sidx<INFO.length-1?'<button class="sect-mv dn" data-s="'+s.id+'">▼ Move section down</button>':"")+'</div>'):"";
+    const top=(infoEditing&&infoEditing.sectId===s.id&&infoEditing.editSect)?sectEditor(s):tools;
+    const addBtn=(HOST&&!(infoEditing&&infoEditing.sectId===s.id&&infoEditing.add))?('<button class="add-line" data-s="'+s.id+'">+ Add entry</button>'):"";
+    return '<div class="sect'+(openSects.has(s.id)?" open":"")+'" data-sect="'+esc(s.id)+'"><button class="sect-head" onclick="toggleSect(this)"><span class="st">'+esc(s.title)+'</span>'+(s.subtitle?'<span class="ss">'+esc(s.subtitle)+'</span>':"")+'<span class="chev">+</span></button><div class="sect-body">'+top+'<ul>'+items+'</ul>'+adding+addBtn+'</div></div>';
+  }).join("");
+  wireInfo();
+}
+function entryEditor(sectId,it){
+  return '<div class="editor" data-s="'+esc(sectId)+'" data-i="'+(it?esc(it.id):"")+'"><div class="row"><input class="e-label" placeholder="Label (optional)" value="'+(it?esc(it.label||""):"")+'" style="max-width:150px;"><input class="e-value" placeholder="Name / value" value="'+(it?esc(it.value||""):"")+'"></div><textarea class="e-detail" placeholder="Details (optional)">'+(it?esc(it.detail||""):"")+'</textarea><input class="e-link" placeholder="Link URL (optional)" value="'+(it?esc(it.link||""):"")+'"><input class="e-menu" placeholder="Menu URL (optional)" value="'+(it?esc(it.menu||""):"")+'"><div class="row"><button class="btn-save">Save</button>'+(it?'<button class="btn-del">Delete</button>':"")+'<button class="btn-cancel">Cancel</button></div></div>';
+}
+function sectEditor(s){
+  return '<div class="editor sect-editor" data-s="'+esc(s.id)+'"><input class="e-title" placeholder="Section title" value="'+esc(s.title||"")+'"><input class="e-sub" placeholder="Subtitle (optional)" value="'+esc(s.subtitle||"")+'"><div class="row"><button class="btn-save-sect">Save</button><button class="btn-cancel">Cancel</button></div></div>';
+}
+function wireInfo(){
+  const wrap=document.getElementById("info-sects"); if(!wrap) return;
+  if(!HOST) return;
+  wrap.querySelectorAll(".add-line").forEach(b=>b.addEventListener("click",()=>{ infoEditing={sectId:b.dataset.s,add:true}; renderInfo(); }));
+  wrap.querySelectorAll(".item-edit").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); infoEditing={sectId:b.dataset.s,itemId:b.dataset.i}; renderInfo(); }));
+  wrap.querySelectorAll(".mv.up").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); moveEntry(b.dataset.s,b.dataset.i,-1); }));
+  wrap.querySelectorAll(".mv.dn").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); moveEntry(b.dataset.s,b.dataset.i,1); }));
+  wrap.querySelectorAll(".sect-edit").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); infoEditing={sectId:b.dataset.s,editSect:true}; renderInfo(); }));
+  wrap.querySelectorAll(".sect-mv.up").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); moveSect(b.dataset.s,-1); }));
+  wrap.querySelectorAll(".sect-mv.dn").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); moveSect(b.dataset.s,1); }));
+  const ed=wrap.querySelector(".editor"); if(!ed) return;
+  const sectId=ed.dataset.s;
+  ed.querySelector(".btn-cancel").addEventListener("click",()=>{ infoEditing=null; renderInfo(); });
+  if(ed.classList.contains("sect-editor")){
+    ed.querySelector(".btn-save-sect").addEventListener("click",async()=>{ const s=INFO.find(x=>x.id===sectId); if(!s) return; s.title=ed.querySelector(".e-title").value.trim()||"Untitled"; s.subtitle=ed.querySelector(".e-sub").value.trim(); infoEditing=null; await saveInfo(); renderInfo(); });
+    return;
+  }
+  const itemId=ed.dataset.i;
+  ed.querySelector(".btn-save").addEventListener("click",async()=>{
+    const label=ed.querySelector(".e-label").value.trim(), value=ed.querySelector(".e-value").value.trim(), detail=ed.querySelector(".e-detail").value.trim(), link=ed.querySelector(".e-link").value.trim(), menu=ed.querySelector(".e-menu").value.trim();
+    if(!value){ alert("Add a name/value."); return; }
+    const s=INFO.find(x=>x.id===sectId); if(!s) return;
+    if(itemId){ const it=s.items.find(x=>x.id===itemId); if(it){ it.label=label; it.value=value; it.detail=detail; it.link=link; it.menu=menu; } }
+    else { s.items.push({id:"itm"+Date.now().toString(36),label:label,value:value,detail:detail,link:link,menu:menu}); }
+    infoEditing=null; await saveInfo(); renderInfo();
+  });
+  const del=ed.querySelector(".btn-del");
+  if(del) del.addEventListener("click",async()=>{ const s=INFO.find(x=>x.id===sectId); if(s) s.items=s.items.filter(x=>x.id!==itemId); infoEditing=null; await saveInfo(); renderInfo(); });
+}
+async function moveEntry(sectId,itemId,dir){ const s=INFO.find(x=>x.id===sectId); if(!s) return; const i=s.items.findIndex(x=>x.id===itemId); if(i<0) return; const j=i+dir; if(j<0||j>=s.items.length) return; const t=s.items[i]; s.items[i]=s.items[j]; s.items[j]=t; await saveInfo(); renderInfo(); }
+async function moveSect(sectId,dir){ const i=INFO.findIndex(x=>x.id===sectId); if(i<0) return; const j=i+dir; if(j<0||j>=INFO.length) return; const t=INFO[i]; INFO[i]=INFO[j]; INFO[j]=t; await saveInfo(); renderInfo(); }
+async function loadInfo(){
+  let data=null;
+  if(LIVE){ try{ const r=await sb.from(INFO_TABLE).select("data").eq("id",1).maybeSingle(); if(!r.error&&r.data&&r.data.data) data=r.data.data; }catch(e){ console.warn("info load",e); } }
+  INFO=(Array.isArray(data)&&data.length)?data:JSON.parse(JSON.stringify(DEFAULT_INFO));
+  renderInfo();
+}
+async function saveInfo(){
+  if(!LIVE) return;
+  try{ const r=await sb.from(INFO_TABLE).upsert({id:1,data:INFO,updated_at:new Date().toISOString()}); if(r.error) throw r.error; }
+  catch(e){ alert("Couldn't save: "+(e.message||e)); }
+}
+
+/* ---------- refresh ---------- */
+const refreshBtn=document.getElementById("refreshBtn");
+if(refreshBtn) refreshBtn.addEventListener("click",async()=>{
+  const o=refreshBtn.textContent; refreshBtn.disabled=true; refreshBtn.textContent="Refreshing…";
+  try{ await Promise.all([loadGallery(), loadInfo()]); refreshBtn.textContent="Up to date ✓"; }
+  catch(e){ refreshBtn.textContent="Try again"; }
+  setTimeout(()=>{ refreshBtn.textContent=o; refreshBtn.disabled=false; }, 1500);
+});
+const versionBtn=document.getElementById("versionBtn");
+if(versionBtn) versionBtn.addEventListener("click",()=>{ versionBtn.textContent="Loading…"; const u=new URL(location.href); u.searchParams.set("v", Date.now().toString(36)); location.href=u.toString(); });
+
+loadGallery(); loadInfo();
+</script>
+
+<!--
+  =================  florida-setup.sql  =================
+  After creating the PUBLIC bucket named  florida-album , run:
+
+  create table if not exists public.florida_photos (
+    id uuid primary key default gen_random_uuid(),
+    url text not null, path text not null, uploader text, caption text,
+    created_at timestamptz not null default now()
+  );
+  alter table public.florida_photos enable row level security;
+  create policy "anyone add fp"  on public.florida_photos for insert to anon with check (true);
+  create policy "anyone view fp" on public.florida_photos for select to anon using (true);
+  create policy "anyone del fp"  on public.florida_photos for delete to anon using (true);
+
+  create policy "anyone upload fs" on storage.objects for insert to anon with check (bucket_id = 'florida-album');
+  create policy "anyone view fs"   on storage.objects for select to anon using (bucket_id = 'florida-album');
+  create policy "anyone del fs"    on storage.objects for delete to anon using (bucket_id = 'florida-album');
+  create policy "anyone read buckets" on storage.buckets for select using (true);
+
+  create table if not exists public.florida_info ( id int primary key, data jsonb not null, updated_at timestamptz default now() );
+  alter table public.florida_info enable row level security;
+  create policy "anyone read info"  on public.florida_info for select to anon using (true);
+  create policy "anyone write info" on public.florida_info for insert to anon with check (true);
+  create policy "anyone edit info"  on public.florida_info for update to anon using (true) with check (true);
+  =======================================================
+-->
+</body>
+</html>
